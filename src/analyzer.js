@@ -42,7 +42,55 @@ function shouldIgnoreDir(dirname){
     return ignoreDirs.includes(dirname);
 }
 
+function detectProjectType(files) {
+  const packageJsonFile = files.find(f => f.name === 'package.json');
+  
+  if (packageJsonFile) {
+    try {
+      const packageData = JSON.parse(packageJsonFile.content);
+      const deps = { ...packageData.dependencies, ...packageData.devDependencies };
+      
+      if (deps.react) return 'react';
+      if (deps.vue) return 'vue';
+      if (deps.angular || deps['@angular/core']) return 'angular';
+      if (deps.express) return 'express';
+      if (deps.next) return 'nextjs';
+      if (deps.nuxt) return 'nuxt';
+      
+      return 'node';
+    } catch (error) {
+      return 'javascript';
+    }
+  }
+  
+  const hasJsFiles = files.some(f => f.name.endsWith('.js'));
+  const hasTsFiles = files.some(f => f.name.endsWith('.ts'));
+  const hasJsxFiles = files.some(f => f.name.endsWith('.jsx') || f.name.endsWith('.tsx'));
+  
+  if (hasJsxFiles) return 'react';
+  if (hasTsFiles) return 'typescript';
+  if (hasJsFiles) return 'javascript';
+  
+  return 'unknown';
+}
 
+async function analyzeProject(projectPath) {
+  const files = await scanProjectFiles(projectPath);
+  const projectType = detectProjectType(files);
+  
+  return {
+    files,
+    projectType,
+    stats: {
+      totalFiles: files.length,
+      jsFiles: files.filter(f => f.name.endsWith('.js')).length,
+      tsFiles: files.filter(f => f.name.endsWith('.ts')).length,
+      jsxFiles: files.filter(f => f.name.endsWith('.jsx')).length,
+      tsxFiles: files.filter(f => f.name.endsWith('.tsx')).length,
+      totalSize: files.reduce((sum, f) => sum + f.size, 0)
+    }
+  };
+}
 
 module.exports = {
     scanProjectFiles,
