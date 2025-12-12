@@ -32,11 +32,13 @@ async function scanProjectFiles(projectPath){
     }
 }
 
+//Checks for file with '.js','.ts','.jsx','.tsx' extension
 function isCodeFile(filename){
     const codeExtensions = ['.js','.ts','.jsx','.tsx'];
     return codeExtensions.some(ext => filename.endsWith(ext));
 }
 
+//Ignore Directory
 function shouldIgnoreDir(dirname){
     const ignoreDirs = ['node_modules', '.git', 'dist', 'build', 'coverage', '.next'];
     return ignoreDirs.includes(dirname);
