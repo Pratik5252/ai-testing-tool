@@ -124,7 +124,61 @@ program
       }
     });
 
-    watcher.on('ready', () => {
-        console.log(chalk.green('🟢 Watching for changes...'));
-    })
+    watcher.on("ready", () => {
+      console.log(chalk.green("🟢 Watching for changes..."));
+    });
   });
+
+program
+  .command("init")
+  .description("Initialize AI test suite configuration")
+  .action(async () => {
+    console.log(chalk.blue("\n🚀 Initialize AI Test Suite\n"));
+
+    const answers = await inquirer.prompt([
+      {
+        type: "list",
+        name: "framework",
+        message: "Which test framework do you want to use?",
+        choices: ["jest", "vitest", "mocha"],
+        default: "jest",
+      },
+      {
+        type: "input",
+        name: "outputDir",
+        message: "Where should test files be saved?",
+        default: "./tests",
+      },
+    ]);
+
+    const config = {
+      framework: answers.framework,
+      outputDir: answers.outputDir,
+      filePatterns: ["**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx"],
+      excludePatterns: [
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        "**/*.test.*",
+      ],
+    };
+
+    await fs.writeFile(".ai-test-suite.json", JSON.stringify(config, null, 2));
+
+    console.log(chalk.green("\n✅ Configuration saved to .ai-test-suite.json"));
+
+    console.log(chalk.yellow("\n📦 Install your test framework:"));
+    if (answers.framework === "jest") {
+      console.log(chalk.cyan("  npm install jest --save-dev"));
+    } else if (answers.framework === "vitest") {
+      console.log(chalk.cyan("  npm install vitest --save-dev"));
+    } else if (answers.framework === "mocha") {
+      console.log(chalk.cyan("  npm install mocha --save-dev"));
+    }
+
+    console.log(chalk.yellow("\nYou can now run:"));
+    console.log(chalk.yellow("  ai-test-suite analyze"));
+    console.log(chalk.yellow("  ai-test-suite watch"));
+  });
+
+program.parse();
