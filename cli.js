@@ -2,7 +2,7 @@
 const { program } = require("commander");
 const chalk = require("chalk");
 const ora = require("ora");
-const inquirer = require("inquirer");
+const inquirer = require("inquirer").default || require("inquirer");
 const fs = require("fs-extra");
 const path = require("path");
 
@@ -44,7 +44,35 @@ program
     const spinner = ora("Scanning projects files...").start();
 
     try {
-      const files = await scanProjectFiles(targetPath);
+      const stat = await fs.stat(targetPath);
+      let files;
+      let analysisType;
+
+      if (stat.isFile()) {
+        // Single file analysis
+        if (!targetPath.match(/\.(js|ts|jsx|tsx)$/)) {
+          throw new Error(
+            "File must be a JavaScript/TypeScript file (.js, .ts, .jsx, .tsx)"
+          );
+        }
+
+        const content = await fs.readFile(targetPath, "utf8");
+        files = [
+          {
+            name: path.basename(targetPath),
+            path: targetPath,
+            relativePath: path.basename(targetPath),
+            content: content,
+            size: stat.size,
+          },
+        ];
+        analysisType = "file";
+      } else {
+        // Directory analysis
+        files = await scanProjectFiles(targetPath);
+        analysisType = "directory";
+      }
+
       const projectType = detectProjectType(files);
 
       spinner.succeed(
