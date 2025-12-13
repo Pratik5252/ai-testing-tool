@@ -1,4 +1,8 @@
 const axios = require('axios');
+const {
+  analyzeFileContent,
+  generateEnhancedTestTemplate
+} = require('./utils');
 
 const API_BASE_URL = process.env.AI_TEST_API || 'http://localhost:3000';
 
@@ -8,7 +12,7 @@ async function generateTests(files, framework = 'jest') {
   try {
     for (const file of files) {
       if (shouldGenerateTest(file)) {
-        console.log(`Generating test for: ${file.name}`);
+        console.log(`🔍 Generating test for: ${file.name}`);
         
         const testContent = await generateSingleTest(file, framework);
         
@@ -27,13 +31,11 @@ async function generateTests(files, framework = 'jest') {
 }
 
 function shouldGenerateTest(file) {
-  // Skip test files themselves
   if (file.name.includes('.test.') || file.name.includes('.spec.')) {
     return false;
   }
   
-  // Skip config files
-  const configFiles = ['webpack.config.js', 'vite.config.js', 'jest.config.js'];
+  const configFiles = ['webpack.config.js', 'vite.config.js', 'jest.config.js', 'package.json'];
   if (configFiles.includes(file.name)) {
     return false;
   }
@@ -58,74 +60,56 @@ function getTestFileName(originalName, framework) {
 
 async function generateSingleTest(file, framework) {
   try {
-    // For now, use mock generation until we deploy DigitalOcean API
-    if (process.env.NODE_ENV === 'development') {
-      return generateMockTest(file, framework);
-    }
+    console.log(`📡 Connecting to server: ${API_BASE_URL}/analyze`);
     
-    // Call your DigitalOcean API
     const response = await axios.post(`${API_BASE_URL}/analyze`, {
       file: {
         name: file.name,
         content: file.content,
-        path: file.relativePath
+        path: file.relativePath || file.path
       },
       framework: framework,
       options: {
         generateEdgeCases: true,
         includeSetup: true
       }
+    }, {
+      timeout: 120000,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
     
-    return response.data.generatedTest;
+    if (response.data.success) {
+      console.log(`✅ Test generated via ${response.data.metadata.method} for ${file.name}`);
+      return response.data.generatedTest;
+    } else {
+      throw new Error('Server returned unsuccessful response');
+    }
     
   } catch (error) {
-    console.warn(`API call failed, using fallback for ${file.name}`);
-    return generateMockTest(file, framework);
+    if (error.code === 'ECONNREFUSED') {
+      console.warn(`🔄 Server unavailable, using local fallback for ${file.name}`);
+      return generateLocalFallbackTest(file, framework);
+    } else if (error.response) {
+      console.warn(`⚠️ Server error (${error.response.status}): ${error.response.data.error}`);
+      return generateLocalFallbackTest(file, framework);
+    } else {
+      console.warn(`⚠️ Network error: ${error.message}`);
+      return generateLocalFallbackTest(file, framework);
+    }
   }
 }
 
-function generateMockTest(file, framework) {
+// Enhanced local fallback using shared utilities
+function generateLocalFallbackTest(file, framework) {
   const baseName = file.name.replace(/\.(js|ts|jsx|tsx)$/, '');
   
-  if (framework === 'jest') {
-    return `// Generated test for ${file.name}
-import { ${baseName} } from './${baseName}';
-
-describe('${baseName}', () => {
-  test('should be defined', () => {
-    expect(${baseName}).toBeDefined();
-  });
+  console.log(`🔧 Generating enhanced local test for ${file.name} using shared utilities`);
   
-  test('should work correctly', () => {
-    // TODO: Add specific test cases
-    expect(true).toBe(true);
-  });
-});
-`;
-  } else if (framework === 'vitest') {
-    return `// Generated test for ${file.name}
-import { describe, test, expect } from 'vitest';
-import { ${baseName} } from './${baseName}';
+  const analysis = analyzeFileContent(file.content);
 
-describe('${baseName}', () => {
-  test('should be defined', () => {
-    expect(${baseName}).toBeDefined();
-  });
-});
-`;
-  } else {
-    return `// Generated test for ${file.name}
-const { expect } = require('chai');
-const { ${baseName} } = require('./${baseName}');
-
-describe('${baseName}', () => {
-  it('should be defined', () => {
-    expect(${baseName}).to.not.be.undefined;
-  });
-});
-`;
-  }
+  return generateEnhancedTestTemplate(baseName, analysis, framework, file);
 }
 
 module.exports = {
