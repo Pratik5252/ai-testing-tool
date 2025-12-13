@@ -3,6 +3,17 @@ const { analyzeFileContent, generateEnhancedTestTemplate } = require("./utils");
 
 const API_BASE_URL = process.env.AI_TEST_API || "http://localhost:3000";
 
+/**
+ * Generate tests for a list of source files using the specified test framework.
+ *
+ * Iterates over the provided files, generates a test for each file that should have one,
+ * and returns an array of generated test descriptors.
+ *
+ * @param {Array<Object>} files - Array of source file objects. Each object must include `name` and `content`; `path` or `relativePath` may be provided and will be forwarded to generation routines.
+ * @param {string} [framework="jest"] - Target test framework (e.g., "jest", "vitest", "mocha").
+ * @returns {Array<Object>} Array of generated test descriptors with properties: `filename` (computed test filename), `content` (test source), and `sourceFile` (original file name).
+ * @throws {Error} If any part of the generation process fails; the error message is prefixed with "Test generation failed:".
+ */
 async function generateTests(files, framework = "jest") {
   const generatedTests = [];
 
@@ -27,6 +38,11 @@ async function generateTests(files, framework = "jest") {
   }
 }
 
+/**
+ * Decides whether a test should be generated for a given source file.
+ * @param {{name: string}} file - Source file object; only the `name` property is used to determine eligibility.
+ * @returns {boolean} `true` if a test should be generated, `false` otherwise.
+ */
 function shouldGenerateTest(file) {
   if (file.name.includes(".test.") || file.name.includes(".spec.")) {
     return false;
@@ -45,6 +61,13 @@ function shouldGenerateTest(file) {
   return true;
 }
 
+/**
+ * Compute the test filename for a source file based on the target test framework.
+ *
+ * @param {string} originalName - The source filename including its extension (e.g., "utils.ts").
+ * @param {string} framework - Target test framework: "jest", "vitest", or "mocha". Other values default to Jest-style naming.
+ * @returns {string} The generated test filename (e.g., "utils.test.js", "utils.test.ts", or "utils.spec.js").
+ */
 function getTestFileName(originalName, framework) {
   const baseName = originalName.replace(/\.(js|ts|jsx|tsx)$/, "");
 
@@ -60,6 +83,17 @@ function getTestFileName(originalName, framework) {
   }
 }
 
+/**
+ * Generate a test for a single source file by requesting generation from the configured AI server, falling back to a local enhanced generator if the server is unavailable or returns an error.
+ *
+ * @param {Object} file - Source file information.
+ * @param {string} file.name - Filename (e.g., "utils.js").
+ * @param {string} file.content - File contents to analyze.
+ * @param {string} [file.path] - Absolute or repository path to the file.
+ * @param {string} [file.relativePath] - Path relative to the project root; used preferentially over `path`.
+ * @param {string} framework - Test framework to target (e.g., "jest", "vitest", "mocha").
+ * @returns {string} The generated test content; when the AI server is unavailable or returns an error, returns an enhanced locally generated test. 
+ */
 async function generateSingleTest(file, framework) {
   try {
     console.log(`📡 Connecting to server: ${API_BASE_URL}/analyze`);
@@ -113,7 +147,12 @@ async function generateSingleTest(file, framework) {
   }
 }
 
-// Enhanced local fallback using shared utilities
+/**
+ * Generate an enhanced local test template for a source file using static analysis.
+ * @param {Object} file - Source file metadata and content; must include `name` and `content`.
+ * @param {string} framework - Target test framework (e.g., "jest", "vitest", "mocha").
+ * @returns {string} The generated test file content.
+ */
 function generateLocalFallbackTest(file, framework) {
   const baseName = file.name.replace(/\.(js|ts|jsx|tsx)$/, "");
 
