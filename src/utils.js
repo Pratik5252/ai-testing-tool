@@ -100,13 +100,13 @@ function getTestExtension(framework, sourceFileName = '') {
   const ext = extMatch ? extMatch[0] : '.js';
   switch (framework) {
     case 'jest':
-      return `.test.${ext}`;
+      return `.test${ext}`;
     case 'vitest':
-      return `.test.${ext}`;
+      return `.test${ext}`;
     case 'mocha':
       return ext === '.ts' || ext === '.tsx' ? `.spec${ext}` : '.spec.js';
     default:
-      return `.test.${ext}`;
+      return `.test${ext}`;
   }
 }
 
