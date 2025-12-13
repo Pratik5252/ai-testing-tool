@@ -51,7 +51,7 @@ app.post('/analyze', async (req,res) => {
         })
     } catch (error) {
         console.error('❌ Cline integration error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Internal server error' });
     }
 })
 
