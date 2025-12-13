@@ -3,7 +3,7 @@ const cors = require('cors');
 const fs = require('fs-extra');
 const path = require('path');
 const {exec} = require('child_process');
-const {promisify} = require('util');
+const {promisify} = require('util')
 
 const {
   analyzeFileContent,
@@ -29,12 +29,12 @@ app.get('/', (req, res) => {
 
 app.post('/analyze', async (req,res) => {
     try {
-        const {file,framework,options} = req.body;
+        const {file, framework = 'jest', options = {}} = req.body;
 
         if(!file || !file.content){
             return res.status(400).json({error: 'File content is required'})
         }
-        // Validate file.content type and size
+
         const MAX_FILE_CONTENT_SIZE = 1024 * 1024; // 1MB
         if (typeof file.content !== 'string') {
             return res.status(400).json({error: 'File content must be a string'});
