@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs-extra');
 const path = require('path');
-const {exec} = require('child_process');
+const {execFile} = require('child_process');
 const {promisify} = require('util')
 
 const {
@@ -11,7 +11,7 @@ const {
   generateEnhancedTestTemplate
 } = require('../src/utils');
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -65,23 +65,22 @@ app.post('/analyze', async (req,res) => {
 
 async function generateTestWithCline(file, framework, options) {
   try {
-    const workspaceDir = path.join(__dirname, 'temp', `workspace-${Date.now()}`);
+    const workspaceDir = path.join(__dirname, 'temp', `workspace-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.ensureDir(workspaceDir);
     
-    const sourceFilePath = path.join(workspaceDir, file.name);
+    const sanitizedFileName = path.basename(file.name);
+    const sourceFilePath = path.join(workspaceDir, sanitizedFileName);
     await fs.writeFile(sourceFilePath, file.content);
     
-    const prompt = buildClinePrompt(file, framework, options);
+    const prompt = buildClinePrompt({ ...file, name: sanitizedFileName }, framework, options);
     
-    const testContent = await executeClineCommand(workspaceDir, prompt, file.name, framework);
-    
-    // Cleanup
-    await fs.remove(workspaceDir);
-    
+    const testContent = await executeClineCommand(workspaceDir, prompt, sanitizedFileName, framework);
     return testContent;
     
   } catch (error) {
     throw new Error(`Cline CLI execution failed: ${error.message}`);
+  }finally{
+    await fs.remove(workspaceDir).catch(() => {});
   }
 }
 
@@ -124,8 +123,8 @@ async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
     
     // Correct Cline CLI command based on help output
     const clineArgs = [
-      `"${prompt}"`,                    
-      '-f', `"${sourceFilePath}"`,      
+      prompt,                    
+      '-f', sourceFilePath,      
       '-m', 'act',                      
       '--oneshot',                      
       '--no-interactive',               
@@ -133,16 +132,14 @@ async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
       '-y'                              
     ];
     
-    const clineCommand = `cline ${clineArgs.join(' ')}`;
-    
-    console.log(`🤖 Executing Cline: ${clineCommand}`);
+    console.log(`🤖 Executing Cline: ${clineArgs.length} arguments`);
     console.log(`📁 Working directory: ${workspaceDir}`);
     
     // Execute Cline CLI
     const maxBuffer = process.env.CLINE_MAX_BUFFER
       ? parseInt(process.env.CLINE_MAX_BUFFER, 10)
       : 1024 * 1024 * 50; // Default to 50MB
-    const { stdout, stderr } = await execAsync(clineCommand, {
+    const { stdout, stderr } = await execFileAsync('cline', clineArgs, {
       cwd: workspaceDir,
       timeout: 120000,
       maxBuffer
@@ -196,7 +193,7 @@ function generateEnhancedFallback(fileName, framework) {
 
 app.get('/cline/health', async (req, res) => {
   try {
-    const { stdout } = await execAsync('cline version');
+    const { stdout } = await execFileAsync('cline', ['version']);
     res.json({
       status: 'healthy',
       version: stdout.trim(),
@@ -204,11 +201,11 @@ app.get('/cline/health', async (req, res) => {
       commands: ['cline [prompt] [flags]', 'cline auth', 'cline task', 'cline instance']
     });
   } catch (error) {
-    res.json({
+    res.status(503).json({
       status: 'unavailable',
-      error: error.message,
+      error: 'Cline CLI not available',
       available: false,
-      suggestion: 'Install Cline CLI: npm install -g @cline/cli'
+      suggestion: 'Install Cline CLI: npm install -g cline'
     });
   }
 });
