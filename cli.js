@@ -12,7 +12,7 @@ const {
   detectProjectType,
 } = require("./src/analyzer");
 const { generateTests } = require("./src/generator");
-
+const {analyzeFileContent,shouldGenerateTest} = require('./src/utils')
 const packageJson = require("./package.json");
 
 program
@@ -79,6 +79,8 @@ program
         `Found ${files.length} files to analyze (${projectType} project)`
       );
 
+      await displayAnalysisResults(files, projectType, options.framework);
+
       const generateSpinner = ora("Generating tests with AI...").start();
       const generatedTests = await generateTests(files, options.framework);
       generateSpinner.succeed("Test generation complete!");
@@ -90,6 +92,7 @@ program
         const outputPath = path.join(options.output, test.filename);
         await fs.writeFile(outputPath, test.content);
         savedCount++;
+        console.log(chalk.gray(`  ✓ ${test.filename}`));
       }
 
       console.log(
@@ -105,6 +108,61 @@ program
       process.exit(1);
     }
   });
+
+async function displayAnalysisResults(files, projectType, framework) {
+  console.log(chalk.blue("\n📊 PROJECT ANALYSIS"));
+  console.log(chalk.blue("====================\n"));
+  
+  // Project Overview
+  console.log(chalk.white(`📁 Project Type: ${chalk.cyan(projectType)}`));
+  console.log(chalk.white(`🧪 Framework: ${chalk.cyan(framework)}`));
+  console.log(chalk.white(`📄 Total Files: ${chalk.cyan(files.length)}\n`));
+
+  // Get testable files
+  const testableFiles = files.filter(file => shouldGenerateTest(file));
+  
+  console.log(chalk.white("🔍 Files to test:"));
+  
+  testableFiles.slice(0, 8).forEach((file, index) => {
+    const analysis = analyzeFileContent(file.content);
+    const size = (file.size / 1024).toFixed(1);
+    
+    console.log(chalk.gray(`  ${index + 1}. ${chalk.white(file.name)} (${size}KB)`));
+    
+    if (analysis.functions.length > 0) {
+      const funcList = analysis.functions.slice(0, 3).join(', ');
+      const extra = analysis.functions.length > 3 ? ` +${analysis.functions.length - 3} more` : '';
+      console.log(chalk.gray(`     Functions: ${funcList}${extra}`));
+    }
+    
+    const features = [];
+    if (analysis.hasAsync) features.push('async');
+    if (analysis.isReactComponent) features.push('React');
+    if (analysis.isApiRoute) features.push('API');
+    if (features.length > 0) {
+      console.log(chalk.gray(`     Features: ${features.join(', ')}`));
+    }
+  });
+
+  if (testableFiles.length > 8) {
+    console.log(chalk.gray(`  ... and ${testableFiles.length - 8} more files`));
+  }
+
+  // Summary
+  const totalComplexity = testableFiles.reduce((sum, file) => {
+    const analysis = analyzeFileContent(file.content);
+    return sum + analysis.complexity;
+  }, 0);
+
+  const avgComplexity = testableFiles.length > 0 ? (totalComplexity / testableFiles.length).toFixed(1) : '0';
+  
+  console.log(chalk.white(`\n📈 Summary:`));
+  console.log(chalk.gray(`  Test files to generate: ${chalk.cyan(testableFiles.length)}`));
+  console.log(chalk.gray(`  Average complexity: ${chalk.cyan(avgComplexity)}`));
+  
+  const estimatedTime = Math.max(1, Math.ceil(testableFiles.length * 0.5));
+  console.log(chalk.gray(`  Estimated time: ~${chalk.cyan(estimatedTime)} minutes`));
+}
 
 program
   .command("watch [path]")
