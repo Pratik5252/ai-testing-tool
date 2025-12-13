@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { analyzeFileContent, generateEnhancedTestTemplate } = require("./utils");
+const { analyzeFileContent, generateEnhancedTestTemplate,shouldGenerateTest } = require("./utils");
 
 const API_BASE_URL = process.env.AI_TEST_API || "http://localhost:3000";
 
@@ -36,29 +36,6 @@ async function generateTests(files, framework = "jest") {
   } catch (error) {
     throw new Error(`Test generation failed: ${error.message}`);
   }
-}
-
-/**
- * Decides whether a test should be generated for a given source file.
- * @param {{name: string}} file - Source file object; only the `name` property is used to determine eligibility.
- * @returns {boolean} `true` if a test should be generated, `false` otherwise.
- */
-function shouldGenerateTest(file) {
-  if (file.name.includes(".test.") || file.name.includes(".spec.")) {
-    return false;
-  }
-
-  const configFiles = [
-    "webpack.config.js",
-    "vite.config.js",
-    "jest.config.js",
-    "package.json",
-  ];
-  if (configFiles.includes(file.name)) {
-    return false;
-  }
-
-  return true;
 }
 
 /**

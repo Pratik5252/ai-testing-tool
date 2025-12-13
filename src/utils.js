@@ -220,6 +220,27 @@ describe('${baseName}', () => {
 `;
 }
 
+/**
+ * Decides whether a test should be generated for a given source file.
+ * @param {{name: string}} file - Source file object; only the `name` property is used to determine eligibility.
+ * @returns {boolean} `true` if a test should be generated, `false` otherwise.
+ */
+function shouldGenerateTest(file) {
+  if (file.name.includes(".test.") || file.name.includes(".spec.")) {
+    return false;
+  }
+
+  const configFiles = [
+    'webpack.config.js', 'vite.config.js', 'jest.config.js', 
+    'package.json', 'tsconfig.json', '.eslintrc.js'
+  ];
+  if (configFiles.includes(file.name)) {
+    return false;
+  }
+
+  return true;
+}
+
 module.exports = {
   analyzeFileContent,
   extractFunctions,
@@ -230,5 +251,6 @@ module.exports = {
   generateEnhancedTestTemplate,
   generateJestTemplate,
   generateVitestTemplate,
-  generateMochaTemplate
+  generateMochaTemplate,
+  shouldGenerateTest
 };
