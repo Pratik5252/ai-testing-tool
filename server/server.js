@@ -29,7 +29,8 @@ app.get('/', (req, res) => {
 
 app.post('/analyze', async (req,res) => {
     try {
-        let {file,framework,options} = req.body;
+        const {file,framework} = req.body;
+        let options = req.body.options;
 
         if(!file || !file.content){
             return res.status(400).json({error: 'File content is required'})
@@ -55,6 +56,7 @@ app.post('/analyze', async (req,res) => {
         }
 
         // Ensure options is a non-null object with safe defaults
+        // Note: Arrays are excluded since they are typeof 'object' but shouldn't be used for options
         if (!options || typeof options !== 'object' || Array.isArray(options)) {
             options = {};
         }
