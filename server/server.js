@@ -64,8 +64,8 @@ app.post('/analyze', async (req,res) => {
 })
 
 async function generateTestWithCline(file, framework, options) {
+  const workspaceDir = path.join(__dirname, 'temp', `workspace-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   try {
-    const workspaceDir = path.join(__dirname, 'temp', `workspace-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     await fs.ensureDir(workspaceDir);
     
     const sanitizedFileName = path.basename(file.name);
@@ -215,5 +215,5 @@ app.listen(PORT, () => {
   console.log(`🚀 AI Test Suite API running on port ${PORT}`);
   console.log(`🤖 Cline CLI integration with shared utilities`);
   console.log(`📡 Ready for test generation requests`);
-  console.log(`🔍 Health check: GET /cline/health`)
+  console.log(`🔍 Health check: GET /cline/health`);
 });
