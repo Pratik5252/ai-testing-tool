@@ -105,35 +105,19 @@ async function generateTestWithCline(file, framework, options) {
  * @returns {string} The composed prompt text to be passed to the Cline CLI for test generation.
  */
 function buildClinePrompt(file, framework, options) {
-  // Use shared analysis function
   const analysis = analyzeFileContent(file.content);
   const testFileName = file.name.replace(/\.(js|ts|jsx|tsx)$/, getTestExtension(framework));
   
-  return `Create a comprehensive ${framework} test file named "${testFileName}" for the JavaScript/TypeScript file "${file.name}".
+  // Short, focused prompt to stay within token limits
+  const shortPrompt = `Generate ${framework} test file "${testFileName}" for "${file.name}".
 
-SOURCE FILE ANALYSIS:
-- Functions found: ${analysis.functions.join(', ') || 'None detected'}
-- Classes found: ${analysis.classes.join(', ') || 'None detected'}  
-- External dependencies: ${analysis.imports.join(', ') || 'None'}
-- Contains async code: ${analysis.hasAsync ? 'Yes' : 'No'}
-- Contains promises: ${analysis.hasPromises ? 'Yes' : 'No'}
-- React component: ${analysis.isReactComponent ? 'Yes' : 'No'}
-- API route: ${analysis.isApiRoute ? 'Yes' : 'No'}
-- Complexity score: ${analysis.complexity}
+Functions: ${analysis.functions.slice(0, 5).join(', ') || 'None'}
+${analysis.classes.length > 0 ? `Classes: ${analysis.classes.slice(0, 3).join(', ')}` : ''}
+${analysis.hasAsync ? 'Has async code. ' : ''}${analysis.isReactComponent ? 'React component. ' : ''}${analysis.isApiRoute ? 'API route. ' : ''}
 
-REQUIREMENTS:
-1. Generate complete ${framework} test suite
-2. Test all exported functions and classes
-3. Include proper imports and mocking
-4. ${options.generateEdgeCases ? 'Add comprehensive edge cases (null, undefined, empty values, boundary conditions)' : 'Include basic edge case tests'}
-5. ${options.includeSetup ? 'Add proper beforeEach/afterEach setup and teardown' : 'Keep setup minimal'}
-6. Handle async functions with proper await/async testing
-7. Mock external dependencies appropriately
-8. Use ${framework} best practices and conventions
-9. ${analysis.isReactComponent ? 'Include React component testing with @testing-library/react' : ''}
-10. ${analysis.isApiRoute ? 'Include API endpoint testing with request/response mocking' : ''}
+Create complete test suite with imports, mocks, and ${framework} best practices. Keep output under 3500 tokens.`;
 
-Create the test file with meaningful test descriptions and thorough coverage.`;
+  return shortPrompt;
 }
 
 /**
@@ -170,7 +154,7 @@ async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
       : 1024 * 1024 * 50; // Default to 50MB
     const { stdout, stderr } = await execFileAsync('cline', clineArgs, {
       cwd: workspaceDir,
-      timeout: 120000,
+      timeout: 180000,
       maxBuffer
     });
     
