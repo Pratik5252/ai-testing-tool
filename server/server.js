@@ -139,10 +139,13 @@ async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
     console.log(`📁 Working directory: ${workspaceDir}`);
     
     // Execute Cline CLI
+    const maxBuffer = process.env.CLINE_MAX_BUFFER
+      ? parseInt(process.env.CLINE_MAX_BUFFER, 10)
+      : 1024 * 1024 * 50; // Default to 50MB
     const { stdout, stderr } = await execAsync(clineCommand, {
       cwd: workspaceDir,
       timeout: 120000,
-      maxBuffer: 1024 * 1024 * 10 
+      maxBuffer
     });
     
     if (stderr && !stderr.includes('warning')) {
