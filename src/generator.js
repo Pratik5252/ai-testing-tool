@@ -1,134 +1,171 @@
-const axios = require('axios');
+const axios = require("axios");
+const { analyzeFileContent, generateEnhancedTestTemplate } = require("./utils");
 
-const API_BASE_URL = process.env.AI_TEST_API || 'http://localhost:3000';
+const API_BASE_URL = process.env.AI_TEST_API || "http://localhost:3000";
 
-async function generateTests(files, framework = 'jest') {
+/**
+ * Generate tests for a list of source files using the specified test framework.
+ *
+ * Iterates over the provided files, generates a test for each file that should have one,
+ * and returns an array of generated test descriptors.
+ *
+ * @param {Array<Object>} files - Array of source file objects. Each object must include `name` and `content`; `path` or `relativePath` may be provided and will be forwarded to generation routines.
+ * @param {string} [framework="jest"] - Target test framework (e.g., "jest", "vitest", "mocha").
+ * @returns {Array<Object>} Array of generated test descriptors with properties: `filename` (computed test filename), `content` (test source), and `sourceFile` (original file name).
+ * @throws {Error} If any part of the generation process fails; the error message is prefixed with "Test generation failed:".
+ */
+async function generateTests(files, framework = "jest") {
   const generatedTests = [];
-  
+
   try {
     for (const file of files) {
       if (shouldGenerateTest(file)) {
-        console.log(`Generating test for: ${file.name}`);
-        
+        console.log(`🔍 Generating test for: ${file.name}`);
+
         const testContent = await generateSingleTest(file, framework);
-        
+
         generatedTests.push({
           filename: getTestFileName(file.name, framework),
           content: testContent,
-          sourceFile: file.name
+          sourceFile: file.name,
         });
       }
     }
-    
+
     return generatedTests;
   } catch (error) {
     throw new Error(`Test generation failed: ${error.message}`);
   }
 }
 
+/**
+ * Decides whether a test should be generated for a given source file.
+ * @param {{name: string}} file - Source file object; only the `name` property is used to determine eligibility.
+ * @returns {boolean} `true` if a test should be generated, `false` otherwise.
+ */
 function shouldGenerateTest(file) {
-  // Skip test files themselves
-  if (file.name.includes('.test.') || file.name.includes('.spec.')) {
+  if (file.name.includes(".test.") || file.name.includes(".spec.")) {
     return false;
   }
-  
-  // Skip config files
-  const configFiles = ['webpack.config.js', 'vite.config.js', 'jest.config.js'];
+
+  const configFiles = [
+    "webpack.config.js",
+    "vite.config.js",
+    "jest.config.js",
+    "package.json",
+  ];
   if (configFiles.includes(file.name)) {
     return false;
   }
-  
+
   return true;
 }
 
+/**
+ * Compute the test filename for a source file based on the target test framework.
+ *
+ * @param {string} originalName - The source filename including its extension (e.g., "utils.ts").
+ * @param {string} framework - Target test framework: "jest", "vitest", or "mocha". Other values default to Jest-style naming.
+ * @returns {string} The generated test filename (e.g., "utils.test.js", "utils.test.ts", or "utils.spec.js").
+ */
 function getTestFileName(originalName, framework) {
-  const baseName = originalName.replace(/\.(js|ts|jsx|tsx)$/, '');
-  
+  const baseName = originalName.replace(/\.(js|ts|jsx|tsx)$/, "");
+
   switch (framework) {
-    case 'jest':
+    case "jest":
       return `${baseName}.test.js`;
-    case 'vitest':
+    case "vitest":
       return `${baseName}.test.ts`;
-    case 'mocha':
+    case "mocha":
       return `${baseName}.spec.js`;
     default:
       return `${baseName}.test.js`;
   }
 }
 
+/**
+ * Generate a test for a single source file by requesting generation from the configured AI server, falling back to a local enhanced generator if the server is unavailable or returns an error.
+ *
+ * @param {Object} file - Source file information.
+ * @param {string} file.name - Filename (e.g., "utils.js").
+ * @param {string} file.content - File contents to analyze.
+ * @param {string} [file.path] - Absolute or repository path to the file.
+ * @param {string} [file.relativePath] - Path relative to the project root; used preferentially over `path`.
+ * @param {string} framework - Test framework to target (e.g., "jest", "vitest", "mocha").
+ * @returns {string} The generated test content; when the AI server is unavailable or returns an error, returns an enhanced locally generated test. 
+ */
 async function generateSingleTest(file, framework) {
   try {
-    // For now, use mock generation until we deploy DigitalOcean API
-    if (process.env.NODE_ENV === 'development') {
-      return generateMockTest(file, framework);
-    }
-    
-    // Call your DigitalOcean API
-    const response = await axios.post(`${API_BASE_URL}/analyze`, {
-      file: {
-        name: file.name,
-        content: file.content,
-        path: file.relativePath
+    console.log(`📡 Connecting to server: ${API_BASE_URL}/analyze`);
+
+    const response = await axios.post(
+      `${API_BASE_URL}/analyze`,
+      {
+        file: {
+          name: file.name,
+          content: file.content,
+          path: file.relativePath || file.path,
+        },
+        framework: framework,
+        options: {
+          generateEdgeCases: true,
+          includeSetup: true,
+        },
       },
-      framework: framework,
-      options: {
-        generateEdgeCases: true,
-        includeSetup: true
+      {
+        timeout: 120000,
+        headers: {
+          "Content-Type": "application/json",
+        },
       }
-    });
-    
-    return response.data.generatedTest;
-    
+    );
+
+    if (response.data.success) {
+      const method = response.data.metadata?.method || "API";
+      console.log(`✅ Test generated via ${method} for ${file.name}`);
+      if (!response.data.generatedTest)
+        throw new Error("Server returned success but no test content");
+      return response.data.generatedTest;
+    } else {
+      throw new Error("Server returned unsuccessful response");
+    }
   } catch (error) {
-    console.warn(`API call failed, using fallback for ${file.name}`);
-    return generateMockTest(file, framework);
+    if (error.code === "ECONNREFUSED") {
+      console.warn(
+        `🔄 Server unavailable, using local fallback for ${file.name}`
+      );
+      return generateLocalFallbackTest(file, framework);
+    } else if (error.response) {
+      console.warn(
+        `⚠️ Server error (${error.response?.status}): ${error.response?.data?.error || error.message || 'Unknown error'}`
+      );
+      return generateLocalFallbackTest(file, framework);
+    } else {
+      console.warn(`⚠️ Network error: ${error.message}`);
+      return generateLocalFallbackTest(file, framework);
+    }
   }
 }
 
-function generateMockTest(file, framework) {
-  const baseName = file.name.replace(/\.(js|ts|jsx|tsx)$/, '');
-  
-  if (framework === 'jest') {
-    return `// Generated test for ${file.name}
-import { ${baseName} } from './${baseName}';
+/**
+ * Generate an enhanced local test template for a source file using static analysis.
+ * @param {Object} file - Source file metadata and content; must include `name` and `content`.
+ * @param {string} framework - Target test framework (e.g., "jest", "vitest", "mocha").
+ * @returns {string} The generated test file content.
+ */
+function generateLocalFallbackTest(file, framework) {
+  const baseName = file.name.replace(/\.(js|ts|jsx|tsx)$/, "");
 
-describe('${baseName}', () => {
-  test('should be defined', () => {
-    expect(${baseName}).toBeDefined();
-  });
-  
-  test('should work correctly', () => {
-    // TODO: Add specific test cases
-    expect(true).toBe(true);
-  });
-});
-`;
-  } else if (framework === 'vitest') {
-    return `// Generated test for ${file.name}
-import { describe, test, expect } from 'vitest';
-import { ${baseName} } from './${baseName}';
+  console.log(
+    `🔧 Generating enhanced local test for ${file.name} using shared utilities`
+  );
 
-describe('${baseName}', () => {
-  test('should be defined', () => {
-    expect(${baseName}).toBeDefined();
-  });
-});
-`;
-  } else {
-    return `// Generated test for ${file.name}
-const { expect } = require('chai');
-const { ${baseName} } = require('./${baseName}');
+  const analysis = analyzeFileContent(file.content);
 
-describe('${baseName}', () => {
-  it('should be defined', () => {
-    expect(${baseName}).to.not.be.undefined;
-  });
-});
-`;
-  }
+  return generateEnhancedTestTemplate(baseName, analysis, framework, file);
 }
 
 module.exports = {
   generateTests,
-  generateSingleTest
+  generateSingleTest,
 };

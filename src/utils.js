@@ -3,28 +3,44 @@
 */
 
 function analyzeFileContent(content){
+
+    if(typeof content !== 'string'){
+      throw new Error('analyzeFileContent: content must be a string');
+    }
     return {
     functions: extractFunctions(content),
     classes: extractClasses(content),
     imports: extractImports(content),
-    hasAsync: content.includes('async'),
+    hasAsync: /\basync\s+function\b|\basync\s*\(/.test(content),
     hasPromises: content.includes('Promise'),
     hasExports: content.includes('export') || content.includes('module.exports'),
-    isReactComponent: content.includes('React') || content.includes('jsx'),
+    isReactComponent: /import\s+React\s+from\s+['"]react['"]/.test(content) || /require\(['"]react['"]\)/.test(content),
     isApiRoute: content.includes('req') && content.includes('res'),
     hasDatabase: content.includes('db.') || content.includes('mongoose') || content.includes('prisma'),
     hasTypeScript: content.includes('interface') || content.includes('type '),
-    hasJSX: content.includes('jsx') || content.includes('<') && content.includes('>'),
+    hasJSX: content.includes('jsx') || /<([A-Za-z][A-Za-z0-9]*)\b[^>]*>/.test(content),
     complexity: calculateComplexity(content)
   };
 }
 
 function extractFunctions(content) {
-  const functionRegex = /(?:function\s+(\w+)|(\w+)\s*=\s*(?:async\s+)?(?:function|\(.*?\)\s*=>)|export\s+(?:async\s+)?function\s+(\w+))/g;
+  const namedFunctionRegex = /function\s+(\w+)\s*\(/g;
+  const functionExpressionRegex = /(\w+)\s*=\s*(?:async\s+)?function\s*\(/g;
+  const arrowFunctionRegex = /(\w+)\s*=\s*(?:async\s+)?\([^\)]*\)\s*=>/g;
+  const exportedFunctionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(/g;
   const matches = [];
   let match;
-  while ((match = functionRegex.exec(content)) !== null) {
-    matches.push(match[1] || match[2] || match[3]);
+  while ((match = namedFunctionRegex.exec(content)) !== null) {
+    matches.push(match[1]);
+  }
+  while ((match = functionExpressionRegex.exec(content)) !== null) {
+    matches.push(match[1]);
+  }
+  while ((match = arrowFunctionRegex.exec(content)) !== null) {
+    matches.push(match[1]);
+  }
+  while ((match = exportedFunctionRegex.exec(content)) !== null) {
+    matches.push(match[1]);
   }
   return [...new Set(matches)].filter(Boolean);
 }
@@ -79,16 +95,18 @@ function calculateComplexity(content) {
   return complexity;
 }
 
-function getTestExtension(framework) {
+function getTestExtension(framework, sourceFileName = '') {
+  const extMatch = sourceFileName.match(/\.(jsx?|tsx?)$/);
+  const ext = extMatch ? extMatch[0] : '.js';
   switch (framework) {
     case 'jest':
-      return '.test.js';
+      return `.test${ext}`;
     case 'vitest':
-      return '.test.ts';
+      return `.test${ext}`;
     case 'mocha':
-      return '.spec.js';
+      return ext === '.ts' || ext === '.tsx' ? `.spec${ext}` : '.spec.js';
     default:
-      return '.test.js';
+      return `.test${ext}`;
   }
 }
 
