@@ -29,7 +29,8 @@ app.get('/', (req, res) => {
 
 app.post('/analyze', async (req,res) => {
     try {
-        const {file,framework,options} = req.body;
+        const {file,framework} = req.body;
+        let options = req.body.options;
 
         if(!file || !file.content){
             return res.status(400).json({error: 'File content is required'})
@@ -41,6 +42,30 @@ app.post('/analyze', async (req,res) => {
         }
         if (Buffer.byteLength(file.content, 'utf8') > MAX_FILE_CONTENT_SIZE) {
             return res.status(413).json({error: 'File content too large (max 1MB)'});
+        }
+
+        // Validate framework parameter
+        const SUPPORTED_FRAMEWORKS = ['jest', 'vitest', 'mocha'];
+        if (!framework) {
+            return res.status(400).json({error: 'Framework parameter is required'});
+        }
+        if (!SUPPORTED_FRAMEWORKS.includes(framework)) {
+            return res.status(400).json({
+                error: `Invalid framework. Supported frameworks are: ${SUPPORTED_FRAMEWORKS.join(', ')}`
+            });
+        }
+
+        // Ensure options is a non-null object with safe defaults
+        // Note: Arrays are excluded since they are typeof 'object' but shouldn't be used for options
+        if (!options || typeof options !== 'object' || Array.isArray(options)) {
+            options = {};
+        }
+        // Set safe defaults for options properties
+        if (typeof options.generateEdgeCases !== 'boolean') {
+            options.generateEdgeCases = false;
+        }
+        if (typeof options.includeSetup !== 'boolean') {
+            options.includeSetup = false;
         }
 
         console.log(`🔍 Analyzing ${file.name} with Cline CLI...`);
