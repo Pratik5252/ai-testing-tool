@@ -63,6 +63,15 @@ app.post('/analyze', async (req,res) => {
     }
 })
 
+/**
+ * Generates a test file for the provided source file by running the Cline CLI in a temporary workspace.
+ *
+ * @param {{name: string, content: string}} file - Source file object containing the filename and its content.
+ * @param {string} framework - Target test framework used to determine test naming and format.
+ * @param {Object} [options] - Optional parameters that influence prompt construction or CLI behavior.
+ * @returns {string} The content of the generated test.
+ * @throws {Error} If workspace setup, Cline execution, or cleanup fails.
+ */
 async function generateTestWithCline(file, framework, options) {
   const workspaceDir = path.join(__dirname, 'temp', `workspace-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   try {
@@ -84,6 +93,17 @@ async function generateTestWithCline(file, framework, options) {
   }
 }
 
+/**
+ * Builds the natural-language prompt sent to the Cline CLI to generate a test file for the provided source file.
+ *
+ * The prompt includes a brief analysis of the source (functions, classes, imports, async usage, React/API indicators, complexity)
+ * and a clear set of requirements (edge cases, setup/teardown, async handling, mocking, and framework-specific testing guidance).
+ *
+ * @param {{ name: string, content: string }} file - Source file metadata: `name` is the filename, `content` is the file source.
+ * @param {string} framework - Target test framework (used to determine test filename and framework-specific instructions).
+ * @param {{ generateEdgeCases?: boolean, includeSetup?: boolean }} options - Generation options controlling edge-case depth and setup/teardown inclusion.
+ * @returns {string} The composed prompt text to be passed to the Cline CLI for test generation.
+ */
 function buildClinePrompt(file, framework, options) {
   // Use shared analysis function
   const analysis = analyzeFileContent(file.content);
@@ -116,6 +136,15 @@ REQUIREMENTS:
 Create the test file with meaningful test descriptions and thorough coverage.`;
 }
 
+/**
+ * Runs the Cline CLI in a temporary workspace to generate a test file for a source file.
+ *
+ * @param {string} workspaceDir - Path to the workspace directory where the source file is written and the CLI is run.
+ * @param {string} prompt - The prompt to pass to the Cline CLI that describes desired test generation.
+ * @param {string} fileName - The name of the source file (including extension) for which tests should be generated.
+ * @param {string} framework - Target test framework identifier (used to determine expected test file extension and fallback template).
+ * @returns {string} The generated test content as a string; if Cline fails or produces no usable output, returns a generated fallback test template.
+ */
 async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
   try {
     const testFileName = fileName.replace(/\.(js|ts|jsx|tsx)$/, getTestExtension(framework));
@@ -181,6 +210,12 @@ async function executeClineCommand(workspaceDir, prompt, fileName, framework) {
   }
 }
 
+/**
+ * Generate a fallback test file using the shared enhanced template when CLI generation fails.
+ * @param {string} fileName - Original source file name (used to derive the module base name and for template metadata).
+ * @param {string} framework - Target test framework identifier (e.g., "jest", "mocha") used to choose framework-specific template conventions.
+ * @returns {string} Generated test file content for the given source file and framework.
+ */
 function generateEnhancedFallback(fileName, framework) {
   const baseName = fileName.replace(/\.(js|ts|jsx|tsx)$/, '');
   const mockFileContent = `// Mock content for fallback\nfunction ${baseName}() {}\nmodule.exports = { ${baseName} };`;
