@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs-extra');
 const path = require('path');
-const {exec, spaw} = require('child_process');
+const {exec} = require('child_process');
 const {promisify} = require('util')
 
 const {
