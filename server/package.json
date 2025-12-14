@@ -1,7 +1,7 @@
 {
-  "name": "ai-test-suite-server",
+  "name": "test-cli-server",
   "version": "1.0.0",
-  "description": "Backend API for AI test suite generation",
+  "description": "Backend API for AI test generation",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
