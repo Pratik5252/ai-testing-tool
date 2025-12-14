@@ -1,5 +1,5 @@
 {
-  "name": "test-cli-server",
+  "name": "qtest-cli-server",
   "version": "1.0.0",
   "description": "Backend API for AI test generation",
   "private": true,

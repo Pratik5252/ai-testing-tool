@@ -20,7 +20,7 @@ app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => {
   res.json({ 
-    status: 'AI Test Suite API Running',
+    status: 'AI Test API Running',
     version: '1.0.0',
     cline: 'Not integrated yet',
     timestamp: new Date().toISOString()
@@ -231,7 +231,7 @@ app.get('/cline/health', async (req, res) => {
 
 
 app.listen(PORT, () => {
-  console.log(`🚀 AI Test Suite API running on port ${PORT}`);
+  console.log(`🚀 AI Test API running on port ${PORT}`);
   console.log(`🤖 Cline CLI integration with shared utilities`);
   console.log(`📡 Ready for test generation requests`);
   console.log(`🔍 Health check: GET /cline/health`);
