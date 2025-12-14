@@ -1,7 +1,7 @@
 const axios = require("axios");
 const { analyzeFileContent, generateEnhancedTestTemplate,shouldGenerateTest } = require("./utils");
 
-const API_BASE_URL = process.env.AI_TEST_API || "http://localhost:3000";
+const API_BASE_URL = process.env.AI_TEST_API || "http://165.232.191.4:3000";
 
 /**
  * Generate tests for a list of source files using the specified test framework.
