@@ -5,6 +5,7 @@ const ora = require("ora");
 const inquirer = require("inquirer").default || require("inquirer");
 const fs = require("fs-extra");
 const path = require("path");
+const {displayBanner} = require('./banner')
 
 const {
   analyzeProject,
@@ -219,6 +220,7 @@ program
   .command("init")
   .description("Initialize AI test suite configuration")
   .action(async () => {
+    displayBanner();
     console.log(chalk.blue("\n🚀 Initialize AI Test Suite\n"));
 
     const answers = await inquirer.prompt([
