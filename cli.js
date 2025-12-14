@@ -18,7 +18,7 @@ const packageJson = require("./package.json");
 
 program.configureHelp({
   beforeAll: () => {
-    displayBanner();
+    displayBanner({version: packageJson.version});
     return '';
   }
 });
@@ -231,7 +231,7 @@ program
   .command("init")
   .description("Initialize AI test suite configuration")
   .action(async () => {
-    displayBanner();
+    displayBanner({version: packageJson.version});
     console.log(chalk.blue("\n🚀 Initialize AI Test Suite\n"));
 
     const answers = await inquirer.prompt([
