@@ -24,7 +24,7 @@ program.configureHelp({
 });
 
 program
-  .name("test-cli")
+  .name("qtest-cli")
   .description(
     "AI-powered test generation for JavaScript/TypeScript projects"
   )
@@ -51,7 +51,7 @@ program
   .action(async (projectPath, options) => {
     const targetPath = projectPath || process.cwd();
 
-    console.log(chalk.blue("\n🔍 AI Test Suite Generator"));
+    console.log(chalk.blue("\n🔍 AI Test Generator"));
     console.log(chalk.gray(`Analyzing: ${targetPath}\n`));
 
     const spinner = ora("Scanning projects files...").start();
@@ -188,7 +188,7 @@ program
   .action(async (projectPath, options) => {
     const targetPath = projectPath || process.cwd();
 
-    console.log(chalk.blue("\n👁️  AI Test Suite Watcher"));
+    console.log(chalk.blue("\n👁️  AI Test Watcher"));
     console.log(chalk.gray(`Watching: ${targetPath}`));
     console.log(chalk.yellow("Press Ctrl+C to stop\n"));
 
@@ -230,10 +230,10 @@ program
 
 program
   .command("init")
-  .description("Initialize AI test suite configuration")
+  .description("Initialize AI test configuration")
   .action(async () => {
     displayBanner({version: packageJson.version});
-    console.log(chalk.blue("\n🚀 Initialize AI Test Suite\n"));
+    console.log(chalk.blue("\n🚀 Initialize AI Test\n"));
 
     const answers = await inquirer.prompt([
       {
@@ -263,9 +263,9 @@ program
       ],
     };
 
-    await fs.writeFile(".test-cli.json", JSON.stringify(config, null, 2));
+    await fs.writeFile(".qtest-cli.json", JSON.stringify(config, null, 2));
 
-    console.log(chalk.green("\n✅ Configuration saved to .test-cli.json"));
+    console.log(chalk.green("\n✅ Configuration saved to .qtest-cli.json"));
 
     console.log(chalk.yellow("\n📦 Install your test framework:"));
     if (answers.framework === "jest") {
@@ -277,8 +277,8 @@ program
     }
 
     console.log(chalk.yellow("\nYou can now run:"));
-    console.log(chalk.yellow("  test-cli analyze"));
-    console.log(chalk.yellow("  test-cli watch"));
+    console.log(chalk.yellow("  qtest-cli analyze"));
+    console.log(chalk.yellow("  qtest-cli watch"));
   });
 
 program.parse();
