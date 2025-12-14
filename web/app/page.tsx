@@ -1,5 +1,3 @@
-import CLIBanner from './components/CLIBanner';
-
 export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white">
@@ -13,7 +11,7 @@ export default function Home() {
               <span className="animate-pulse">_</span>
             </div>
             <a 
-              href="#docs" 
+              href="https://github.com/Pratik5252/ai-testing-tool#readme" 
               className="text-gray-300 hover:text-white transition-colors duration-200 flex items-center gap-1 px-4 py-2 rounded-lg hover:bg-gray-800/50 font-mono"
             >
               <span>{'>'}</span>
