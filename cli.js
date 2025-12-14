@@ -31,6 +31,7 @@ program
   .version(packageJson.version);
 
 program.action(() => {
+  displayBanner({version: packageJson.version});
   program.help();
 });
 
