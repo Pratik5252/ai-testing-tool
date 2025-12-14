@@ -16,12 +16,23 @@ const { generateTests } = require("./src/generator");
 const {analyzeFileContent,shouldGenerateTest} = require('./src/utils')
 const packageJson = require("./package.json");
 
+program.configureHelp({
+  beforeAll: () => {
+    displayBanner();
+    return '';
+  }
+});
+
 program
   .name("ai-test-suite")
   .description(
     "AI-powered test suite generation for JavaScript/TypeScript projects"
   )
   .version(packageJson.version);
+
+program.action(() => {
+  program.help();
+});
 
 program
   .command("analyze [path]")
