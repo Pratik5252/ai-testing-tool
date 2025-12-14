@@ -73,7 +73,6 @@ function getTestFileName(originalName, framework) {
  */
 async function generateSingleTest(file, framework) {
   try {
-    console.log(`📡 Connecting to server: ${API_BASE_URL}/analyze`);
 
     const response = await axios.post(
       `${API_BASE_URL}/analyze`,
