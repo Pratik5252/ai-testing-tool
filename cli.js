@@ -5,6 +5,7 @@ const ora = require("ora");
 const inquirer = require("inquirer").default || require("inquirer");
 const fs = require("fs-extra");
 const path = require("path");
+const {displayBanner} = require('./banner')
 
 const {
   analyzeProject,
@@ -15,12 +16,23 @@ const { generateTests } = require("./src/generator");
 const {analyzeFileContent,shouldGenerateTest} = require('./src/utils')
 const packageJson = require("./package.json");
 
+program.configureHelp({
+  beforeAll: () => {
+    displayBanner({version: packageJson.version});
+    return '';
+  }
+});
+
 program
   .name("ai-test-suite")
   .description(
     "AI-powered test suite generation for JavaScript/TypeScript projects"
   )
   .version(packageJson.version);
+
+program.action(() => {
+  program.help();
+});
 
 program
   .command("analyze [path]")
@@ -219,6 +231,7 @@ program
   .command("init")
   .description("Initialize AI test suite configuration")
   .action(async () => {
+    displayBanner({version: packageJson.version});
     console.log(chalk.blue("\n🚀 Initialize AI Test Suite\n"));
 
     const answers = await inquirer.prompt([
