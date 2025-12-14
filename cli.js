@@ -24,9 +24,9 @@ program.configureHelp({
 });
 
 program
-  .name("ai-test-suite")
+  .name("test-cli")
   .description(
-    "AI-powered test suite generation for JavaScript/TypeScript projects"
+    "AI-powered test generation for JavaScript/TypeScript projects"
   )
   .version(packageJson.version);
 
@@ -36,7 +36,7 @@ program.action(() => {
 
 program
   .command("analyze [path]")
-  .description("Analyze project and generate test suites")
+  .description("Analyze project and generate test files")
   .option(
     "-f, --framework <framework>",
     "Test framework (jest, vitest, mocha)",
@@ -262,9 +262,9 @@ program
       ],
     };
 
-    await fs.writeFile(".ai-test-suite.json", JSON.stringify(config, null, 2));
+    await fs.writeFile(".test-cli.json", JSON.stringify(config, null, 2));
 
-    console.log(chalk.green("\n✅ Configuration saved to .ai-test-suite.json"));
+    console.log(chalk.green("\n✅ Configuration saved to .test-cli .json"));
 
     console.log(chalk.yellow("\n📦 Install your test framework:"));
     if (answers.framework === "jest") {
@@ -276,8 +276,8 @@ program
     }
 
     console.log(chalk.yellow("\nYou can now run:"));
-    console.log(chalk.yellow("  ai-test-suite analyze"));
-    console.log(chalk.yellow("  ai-test-suite watch"));
+    console.log(chalk.yellow("  test-cli analyze"));
+    console.log(chalk.yellow("  test-cli watch"));
   });
 
 program.parse();
