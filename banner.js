@@ -3,9 +3,9 @@ const chalk = require("chalk");
 
 function displayBanner({version} = {}) {
 
-  let banner = 'AI TEST SUITE';
+  let banner = 'TEST-CLI';
   try {
-    banner = figlet.textSync('AI TEST SUITE', {
+    banner = figlet.textSync('TEST-CLI', {
       font: 'ANSI Shadow',
       horizontalLayout: 'fitted',
       verticalLayout: 'fitted'
@@ -21,7 +21,7 @@ function displayBanner({version} = {}) {
      console.log();
     console.log(chalk.cyan('╔══════════════════════════════════════════════════════════════╗'));
     console.log(chalk.cyan('║') + chalk.white('                                                              ') + chalk.cyan('║'));
-    console.log(chalk.cyan('║') + chalk.bold.blue('     🤖 AI TEST SUITE GENERATOR 🧪                            ') + chalk.cyan('║'));
+    console.log(chalk.cyan('║') + chalk.bold.blue('     🤖 AI TEST GENERATOR 🧪                                  ') + chalk.cyan('║'));
     console.log(chalk.cyan('║') + chalk.white('                                                              ') + chalk.cyan('║'));
     console.log(chalk.cyan('║') + chalk.gray('     Automated test generation for JavaScript/TypeScript      ') + chalk.cyan('║'));
     if(version) console.log(chalk.cyan('║') + chalk.gray(`     Version ${version} | Powered by Cline CLI                     `) + chalk.cyan('║'));
