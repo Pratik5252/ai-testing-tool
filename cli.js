@@ -264,7 +264,7 @@ program
 
     await fs.writeFile(".test-cli.json", JSON.stringify(config, null, 2));
 
-    console.log(chalk.green("\n✅ Configuration saved to .test-cli .json"));
+    console.log(chalk.green("\n✅ Configuration saved to .test-cli.json"));
 
     console.log(chalk.yellow("\n📦 Install your test framework:"));
     if (answers.framework === "jest") {
