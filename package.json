@@ -1,10 +1,9 @@
 {
-  "name": "ai-test-suite",
+  "name": "test-cli",
   "version": "1.0.0",
   "description": "AI-powered automated test suite generation for JavaScript/TypeScript projects",
-  "main": "src/index.js",
   "bin": {
-    "ai-test-suite": "./cli.js"
+    "test-cli": "./cli.js"
   },
   "scripts": {
     "start": "node cli.js",
@@ -28,11 +27,27 @@
     "cline",
     "unit-testing",
     "jest",
-    "test-suite-generation"
+    "test-suite-generation",
+    "cli",
+    "automated-testing"
   ],
   "author": "pratik yesane",
   "license": "MIT",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "files": [
+    "src/",
+    "server/", 
+    "cli.js",
+    "banner.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pratik5252/ai-testing-tool.git"
+  },
+  "homepage": "https://github.com/Pratik5252/ai-testing-tool",
+  "bugs": {
+    "url": "https://github.com/Pratik5252/ai-testing-tool/issues"
   }
 }
