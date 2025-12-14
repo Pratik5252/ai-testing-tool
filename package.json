@@ -39,7 +39,8 @@
   "files": [
     "src/",
     "cli.js",
-    "banner.js"
+    "banner.js",
+    "README.md"
   ],
   "repository": {
     "type": "git",
